@@ -1,17 +1,19 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
-
+import secrets
+import yfinance as yf
 
 app = Flask(__name__)
 
-# ユーザー情報（実際はデータベースから取得）
-# シンプルなデモのため、辞書型で定義
+# ユーザー情報
+# 初期要件では辞書型で定義する。追加機能でデータベースに移行する。
 USERS = {
     "root": {"password": "root", "role": "admin"},
     "sota": {"password": "sota", "role": "user"}
 }
 
 # セッションを使うための秘密鍵を設定
-app.secret_key = 'secret_key'
+secretKey = secrets.token_hex(32)
+app.secret_key = secretKey
 
 @app.route('/')
 def home():
@@ -43,9 +45,11 @@ def admin_page():
 @app.route('/app')
 def app_page():
     """アプリ画面"""
-    # セッションからユーザー名を取得
-    username = session.get('username')
-    return render_template('userWindow.html', name=username)
+    # 任天堂の5週間分の株価を1週間間隔で取得
+    apple = yf.Ticker("NTDOY")
+    data1 = apple.history(period="5wk", interval="1wk")
+    # セッションからユーザー名を取得し渡す
+    return render_template('userWindow.html', name=session.get('username'), tickerData1=data1)
 
 if __name__ == '__main__':
     # サーバーを起動

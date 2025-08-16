@@ -23,9 +23,11 @@ function login() {
             alert('ログインに成功しました');
             // messageElement.textContent = 'ログイン成功！';
             if (result.role === 'admin') {
-                window.location.href = '/admin'; // 管理者画面へ
+                // 管理者画面へ
+                window.location.href = '/admin';
             } else {
-                window.location.href = '/app'; // アプリ画面へ
+                // アプリ画面へ
+                window.location.href = '/app';
             }
         } else {
             // 認証失敗 
