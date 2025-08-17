@@ -1,0 +1,6 @@
+{% macro render_stock_graph(html_data) %}
+    <div>
+        <h2>■ {{ html_data.name }}</h2>
+        <img src="{{ html_data.path }}" alt="{{ html_data.path }}の株価グラフ">
+     </div>
+{% endmacro %}

@@ -1,6 +1,11 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 import secrets
 import yfinance as yf
+from datetime import date, timedelta
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import pandas as pd
+import os
 
 app = Flask(__name__)
 
@@ -11,9 +16,17 @@ USERS = {
     "sota": {"password": "sota", "role": "user"}
 }
 
+# 銘柄情報()と会社名
+# 今後でデータベースに移行するかも
+TICKERS = {
+    "AAPL": "Apple Inc.",
+    "7203.T": "TOYOTA MOTOR CORPORATION",
+    "NVDA": "NVIDIA Corporation",
+    "7974.T": "Nintendo Co., Ltd."
+}
+
 # セッションを使うための秘密鍵を設定
-secretKey = secrets.token_hex(32)
-app.secret_key = secretKey
+app.secret_key = secrets.token_hex(32)
 
 @app.route('/')
 def home():
@@ -45,11 +58,60 @@ def admin_page():
 @app.route('/app')
 def app_page():
     """アプリ画面"""
-    # 任天堂の5週間分の株価を1週間間隔で取得
-    apple = yf.Ticker("NTDOY")
-    data1 = apple.history(period="5wk", interval="1wk")
+    # 現在の年月日を取得。終了日としても利用する
+    today = date.today()
+    # 開始日を設定。10週間前とする。
+    startDay = today - timedelta(weeks=10)
+
+    # グラフ画像のファイルパスの配列
+    # グラフ画像のファイルパスと会社名を格納するリスト
+    dataList = []
+
+    for tickerSymbol, companyName in TICKERS.items():
+        try:
+            data = yf.download(
+                tickers=tickerSymbol,
+                start=startDay,
+                end=today,
+                interval='1wk'
+            )
+            if data.empty:
+                print(f"No data found for {companyName}")
+                # graphPaths.append('static/images/graphError.png')
+                # companyNames.append(tickerSymbol)
+                dataList = ({
+                    'path': url_for('static', filename='images/graphError.png'),
+                    'name': companyName
+                })
+                continue
+            # グラフ描画後、画像ファイルとして保存
+            plt.figure(figsize=(10, 6))
+            plt.plot(mdates.date2num(data.index), data['Close'], marker='.')
+            plt.title(f'{companyName} (10 Weeks)')
+            plt.xlabel('Date')
+            plt.ylabel('Stock Price')
+            plt.grid(True)
+            plt.gca().set_xticks(data.index)
+            plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%y-%m-%d'))
+        
+            plt.tight_layout()
+            # 画像ファイルとして保存
+            imgfilename = f'graph_{tickerSymbol}.png'
+            imgpath = os.path.join('static', 'images', imgfilename)
+            plt.savefig(imgpath)
+            plt.close()
+            
+            dataList.append({
+                'path': url_for('static', filename=f'images/{imgfilename}'),
+                'name': companyName
+            })
+
+        except Exception as e:
+            print(f"Error processing ticker {tickerSymbol}: {e}")
+            continue
     # セッションからユーザー名を取得し渡す
-    return render_template('userWindow.html', name=session.get('username'), tickerData1=data1)
+    return render_template('userWindow.html', name=session.get('username'),
+                           html_dataList=dataList)
 
 if __name__ == '__main__':
     # サーバーを起動

@@ -8,37 +8,15 @@
 </head>
 <body>
 
+    {% from "DjangoMacro.html" import render_stock_graph %} 
+
     <h1>ようこそ、{{ name }}さん！</h1>
     <p>この画面はユーザー向けアプリ画面です。</p>
 
-    {% if tickerData1 is defined and tickerData1 is not none %}
-    <table>
-        <thead>
-            <tr>
-                <th>日付</th>
-                <th>始値</th>
-                <th>高値</th>
-                <th>安値</th>
-                <th>終値</th>
-                <th>出来高</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for date, row in tickerData1.iterrows() %}
-            <tr>
-                <td>{{ date.strftime('%Y-%m-%d') }}</td>
-                <td>{{ "%.2f"|format(row.Open) }}</td>
-                <td>{{ "%.2f"|format(row.High) }}</td>
-                <td>{{ "%.2f"|format(row.Low) }}</td>
-                <td>{{ "%.2f"|format(row.Close) }}</td>
-                <td>{{ row.Volume }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p>株価データを取得できませんでした。</p>
-    {% endif %}
+
+    {% for html_data in html_dataList %}
+        {{ render_stock_graph(html_data) }}
+    {% endfor %}
 
 </body>
 </html>
