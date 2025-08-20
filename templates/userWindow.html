@@ -7,13 +7,11 @@
     <link rel="stylesheet" href="/static/css/styleSheet.css">
 </head>
 <body>
-
-    {% from "DjangoMacro.html" import render_stock_graph %} 
-
     <h1>ようこそ、{{ name }}さん！</h1>
     <p>この画面はユーザー向けアプリ画面です。</p>
 
-
+    {% from "macros/putGraph.html" import render_stock_graph %} 
+    
     {% for html_data in html_dataList %}
         {{ render_stock_graph(html_data) }}
     {% endfor %}

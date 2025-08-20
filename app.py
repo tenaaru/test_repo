@@ -4,7 +4,6 @@ import yfinance as yf
 from datetime import date, timedelta
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import pandas as pd
 import os
 
 app = Flask(__name__)
@@ -63,7 +62,6 @@ def app_page():
     # 開始日を設定。10週間前とする。
     startDay = today - timedelta(weeks=10)
 
-    # グラフ画像のファイルパスの配列
     # グラフ画像のファイルパスと会社名を格納するリスト
     dataList = []
 
@@ -76,9 +74,8 @@ def app_page():
                 interval='1wk'
             )
             if data.empty:
+                # 株価情報の取得に失敗
                 print(f"No data found for {companyName}")
-                # graphPaths.append('static/images/graphError.png')
-                # companyNames.append(tickerSymbol)
                 dataList = ({
                     'path': url_for('static', filename='images/graphError.png'),
                     'name': companyName
@@ -86,14 +83,13 @@ def app_page():
                 continue
             # グラフ描画後、画像ファイルとして保存
             plt.figure(figsize=(10, 6))
-            plt.plot(mdates.date2num(data.index), data['Close'], marker='.')
-            plt.title(f'{companyName} (10 Weeks)')
+            plt.plot(mdates.date2num(data.index), data['Open'], marker='.')
+            plt.title(f'{companyName} (10 weaks)')
             plt.xlabel('Date')
             plt.ylabel('Stock Price')
             plt.grid(True)
             plt.gca().set_xticks(data.index)
             plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%y-%m-%d'))
-        
             plt.tight_layout()
             # 画像ファイルとして保存
             imgfilename = f'graph_{tickerSymbol}.png'
