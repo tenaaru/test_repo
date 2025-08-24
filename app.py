@@ -1,113 +1,125 @@
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for
+from flask import Flask, request, render_template, session, redirect, url_for, jsonify
 import secrets
-import yfinance as yf
-from datetime import date, timedelta
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import os
+from accountAuth import get_user, check_password, hash_password
+from graphGenerator import get_graph_image_path
 
 app = Flask(__name__)
-
-# ユーザー情報
-# 初期要件では辞書型で定義する。追加機能でデータベースに移行する。
-USERS = {
-    "root": {"password": "root", "role": "admin"},
-    "sota": {"password": "sota", "role": "user"}
-}
-
-# 銘柄情報()と会社名
-# 今後でデータベースに移行するかも
-TICKERS = {
-    "AAPL": "Apple Inc.",
-    "7203.T": "TOYOTA MOTOR CORPORATION",
-    "NVDA": "NVIDIA Corporation",
-    "7974.T": "Nintendo Co., Ltd."
-}
-
 # セッションを使うための秘密鍵を設定
 app.secret_key = secrets.token_hex(32)
 
 @app.route('/')
-def home():
-    """トップページ（ログイン画面）を表示"""
-    return render_template('index.html')
+def index():
+    # セッションにユーザー名がなければログインページを表示
+    if 'username' not in session:
+        return render_template('index.html')
+    # ユーザー名があれば、ログイン後のページにリダイレクト
+    return redirect(url_for('user_home'))
 
 @app.route('/login', methods=['POST'])
 def login():
     """認証処理"""
-    data = request.json
+    data = request.get_json()
+    # フォームに入力されたユーザ名とパスワードを取得
     username = data.get('username')
     password = data.get('password')
 
-    user = USERS.get(username)
+    # アカウント認証関数を呼び出し、ユーザ情報を取得
+    user = get_user(username)
 
-    if user and user['password'] == password:
-        # 認証成功
-        session['username'] = username
-        return jsonify(success=True, role=user['role'])
+    if user:
+        # accountAuth.pyのcheck_password関数を使ってパスワードを照合
+        if check_password(password, user['password_hash']):
+            # 認証成功: セッションにユーザー情報を保存
+            session['username'] = user['username']
+            session['role'] = user['role']
+            print(f"Login successful for user: {user['username']}")
+
+            # ロールに応じて異なるページにリダイレクト
+            if user['role'] == 'admin':
+                return jsonify({'success': True, 'redirect_url': url_for('admin_page')})
+            else:
+                return jsonify({'success': True, 'redirect_url': url_for('user_home')})
+        else:
+            # パスワードが一致しない
+            return jsonify({'success': False, 'error': 'Invalid password.'})
     else:
-        # 認証失敗
-        return jsonify(success=False)
+        # ユーザーが見つからない
+        return jsonify({'success': False, 'error': 'User not found.'})
+
+@app.route('/user_home')
+def user_home():
+    # ユーザーがログインしているかチェック
+    if 'username' not in session:
+        return redirect(url_for('index'))
+    graph_data_list = get_graph_image_path()
+    return render_template('userWindow.html', name=session['username'],
+                           html_graph_data_list=graph_data_list)
 
 @app.route('/admin')
 def admin_page():
-    """管理者画面"""
+    # 管理者画面
+    if 'role' not in session or session['role'] != 'admin':
+        # 認証エラー
+        return "Access Denied", 403
+
     return render_template('adminWindow.html')
+
+@app.route('/logout')
+def logout():
+    # セッションからユーザー情報を削除
+    session.pop('username', None)
+    session.pop('role', None)
+
+    return redirect(url_for('index'))
 
 @app.route('/app')
 def app_page():
     """アプリ画面"""
-    # 現在の年月日を取得。終了日としても利用する
-    today = date.today()
-    # 開始日を設定。10週間前とする。
-    startDay = today - timedelta(weeks=10)
 
-    # グラフ画像のファイルパスと会社名を格納するリスト
-    dataList = []
 
-    for tickerSymbol, companyName in TICKERS.items():
-        try:
-            data = yf.download(
-                tickers=tickerSymbol,
-                start=startDay,
-                end=today,
-                interval='1wk'
-            )
-            if data.empty:
-                # 株価情報の取得に失敗
-                print(f"No data found for {companyName}")
-                dataList = ({
-                    'path': url_for('static', filename='images/graphError.png'),
-                    'name': companyName
-                })
-                continue
-            # グラフ描画後、画像ファイルとして保存
-            plt.figure(figsize=(10, 6))
-            plt.plot(mdates.date2num(data.index), data['Open'], marker='.')
-            plt.title(f'{companyName} (10 weaks)')
-            plt.xlabel('Date')
-            plt.ylabel('Stock Price')
-            plt.grid(True)
-            plt.gca().set_xticks(data.index)
-            plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%y-%m-%d'))
-            plt.tight_layout()
-            # 画像ファイルとして保存
-            imgfilename = f'graph_{tickerSymbol}.png'
-            imgpath = os.path.join('static', 'images', imgfilename)
-            plt.savefig(imgpath)
-            plt.close()
-            
-            dataList.append({
-                'path': url_for('static', filename=f'images/{imgfilename}'),
-                'name': companyName
-            })
-
-        except Exception as e:
-            print(f"Error processing ticker {tickerSymbol}: {e}")
-            continue
     # セッションからユーザー名を取得し渡す
     return render_template('userWindow.html', name=session.get('username'),
-                           html_dataList=dataList)
+                           )
+
+@app.route('/register', methods=['GET'])
+def register_page():
+    """新規登録画面の表示"""
+    return render_template('userRegister.html')
+
+@app.route('/register', methods=['POST'])
+def register():
+    """新規ユーザー登録処理"""
+    # リクエストボディからJSONデータを取得
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    # ユーザー名とパスワードが空でないかチェック
+    if not username or not password:
+        return jsonify({'success': False, 'error': 'Username and password are required.'})
+
+    # 既存ユーザーをチェック
+    user = get_user(username)
+    if user:
+        return jsonify({'success': False, 'error': 'User already exists.'})
+
+    try:
+        # パスワードをハッシュ化
+        hashed_password = hash_password(password).decode('utf-8')
+        
+        # DynamoDBに新しいユーザーを保存
+        from accountAuth import users_table
+        users_table.put_item(
+            Item={
+                'username': username,
+                'password_hash': hashed_password,
+                'role': 'user'  # デフォルトロール
+            }
+        )
+        return jsonify({'success': True, 'message': 'Registration successful!'})
+    except Exception as e:
+        print(f"Registration error: {e}")
+        return jsonify({'success': False, 'error': 'Registration failed.'})
 
 if __name__ == '__main__':
     # サーバーを起動

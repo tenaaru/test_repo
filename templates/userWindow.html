@@ -12,9 +12,11 @@
 
     {% from "macros/putGraph.html" import render_stock_graph %} 
     
-    {% for html_data in html_dataList %}
-        {{ render_stock_graph(html_data) }}
+    {% for html_graph_data in html_graph_data_list %}
+        {{ render_stock_graph(html_graph_data) }}
     {% endfor %}
+    
+    <a href="/logout">ログアウト</a>
 
 </body>
 </html>

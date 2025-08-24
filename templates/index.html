@@ -16,7 +16,13 @@
         <button type="button" onclick="login()">ログインする</button>
     </form>
 
-    <p id="message"></p>
+    <!-- Flaskからのエラーメッセージを表示するための要素 -->
+    {% if error %}
+        <p id="message" style="color: red;">{{ error }}</p>
+    {% else %}
+        <!-- エラーがない場合は空のpタグを用意 -->
+        <p id="message"></p>
+    {% endif %}
 
     <script src="/static/js/scriptFile.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>

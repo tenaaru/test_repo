@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新規登録</title>
+</head>
+<body>
+
+    <h2>新規登録</h2>
+    <form id="registerForm">
+        <label for="username">ユーザー名:</label><br>
+        <input type="text" id="username" name="username"><br>
+        <label for="password">パスワード:</label><br>
+        <input type="password" id="password" name="password"><br><br>
+        <button type="button" onclick="register()">登録する</button>
+    </form>
+    
+    <p id="message"></p>
+    <a href="/admin">管理者画面へ戻る</a>
+
+    <script src="/static/js/scriptFile.js"></script>
+</body>
+</html>
