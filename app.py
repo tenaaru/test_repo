@@ -1,6 +1,6 @@
 from flask import Flask, request, render_template, session, redirect, url_for, jsonify
 import secrets
-from accountAuth import get_user, check_password, hash_password
+from accountAuth import get_user, check_password, hash_password, get_users, user_delete
 from graphGenerator import get_graph_image_path
 
 app = Flask(__name__)
@@ -9,12 +9,20 @@ app.secret_key = secrets.token_hex(32)
 
 @app.route('/')
 def index():
-    # セッションにユーザー名がなければログインページを表示
+    # セッションにユーザー名がなければログイン画面を表示
     if 'username' not in session:
         return render_template('index.html')
-    # ユーザー名があれば、ログイン後のページにリダイレクト
-    return redirect(url_for('user_home'))
-
+    
+    # ユーザーがログイン済みの場合、ロールを確認してリダイレクト先を決定
+    if 'role' in session:
+        if session['role'] == 'admin':
+            return redirect(url_for('admin_page'))
+        elif session['role'] == 'user':
+            return redirect(url_for('user_home'))
+    
+    # 例外
+    return render_template('index.html')
+                
 @app.route('/login', methods=['POST'])
 def login():
     """認証処理"""
@@ -25,7 +33,8 @@ def login():
 
     # アカウント認証関数を呼び出し、ユーザ情報を取得
     user = get_user(username)
-
+    print('username is ...',username)
+    print(user)
     if user:
         # accountAuth.pyのcheck_password関数を使ってパスワードを照合
         if check_password(password, user['password_hash']):
@@ -60,9 +69,10 @@ def admin_page():
     # 管理者画面
     if 'role' not in session or session['role'] != 'admin':
         # 認証エラー
-        return "Access Denied", 403
-
-    return render_template('adminWindow.html')
+        return redirect(url_for('index'))
+    
+    user_list = get_users()
+    return render_template('adminWindow.html',user_list=user_list)
 
 @app.route('/logout')
 def logout():
@@ -71,15 +81,6 @@ def logout():
     session.pop('role', None)
 
     return redirect(url_for('index'))
-
-@app.route('/app')
-def app_page():
-    """アプリ画面"""
-
-
-    # セッションからユーザー名を取得し渡す
-    return render_template('userWindow.html', name=session.get('username'),
-                           )
 
 @app.route('/register', methods=['GET'])
 def register_page():
@@ -120,6 +121,27 @@ def register():
     except Exception as e:
         print(f"Registration error: {e}")
         return jsonify({'success': False, 'error': 'Registration failed.'})
+
+@app.route('/delete_user', methods=['POST'])
+def delete_user():
+    # リクエストからユーザー名を取得
+    data = request.get_json()
+    username_to_delete = data.get('username')
+
+    if not username_to_delete:
+        return jsonify({'success': False, 'error': 'ユーザー名が指定されていません'})
+
+    # ログイン中の自分自身を削除しないようにチェック
+    if username_to_delete == session['username']:
+        return jsonify({'success': False, 'error': '自分自身を削除することはできません'})
+
+    # DynamoDBからユーザーを削除
+    if user_delete(username_to_delete):
+        return jsonify({'success': True, 'message': 'ユーザーを削除しました'})
+    else:
+        return jsonify({'success': False, 'error': 'DynamoDBからの削除に失敗しました'})
+
+
 
 if __name__ == '__main__':
     # サーバーを起動

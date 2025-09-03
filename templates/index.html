@@ -7,7 +7,7 @@
 </head>
 <body>
 
-    <h2>株の動き見る</h2>
+    <h2>株の動きモニター</h2>
     <form id="loginForm">
         <label for="username">ユーザー名:</label><br>
         <input type="text" id="username" name="username"><br>
@@ -21,7 +21,7 @@
         <p id="message" style="color: red;">{{ error }}</p>
     {% else %}
         <!-- エラーがない場合は空のpタグを用意 -->
-        <p id="message"></p>
+        <p id="message" style="color: green;"></p>
     {% endif %}
 
     <script src="/static/js/scriptFile.js"></script>

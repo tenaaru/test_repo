@@ -39,3 +39,29 @@ def get_user(username):
     except ClientError as e:
         print(f"DynamoDB get_item error: {e.response['Error']['Message']}")
         return None
+
+def get_users():
+    """
+    DynamoDBからロールがuserの、ユーザー名を取得します。
+    """    
+    try:
+        response = users_table.query(
+            IndexName='GSIrole',
+            KeyConditionExpression=boto3.dynamodb.conditions.Key('role').eq('user'),
+            ProjectionExpression='username'
+        )
+        return response.get('Items', [])
+    except ClientError as e:
+        print(e.response['Error']['Message'])
+        return []
+
+def user_delete(username):
+
+    try:
+        users_table.delete_item(
+            Key={'username': username}
+        )
+        return True
+    except ClientError as e:
+        print(e.response['Error']['Message'])
+        return False

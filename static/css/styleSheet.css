@@ -1,9 +1,8 @@
 table {
-    width: 100%;
+    /* width: 100%; */
     border-collapse: collapse;
     margin-top: 20px;
 }
-
 th, td {
     border: 1px solid #ddd;
     padding: 2px;
@@ -11,4 +10,20 @@ th, td {
 }
 th {
     background-color: #f2f2f2;
+}
+
+.delete-button {
+    background-color: #f44336; /* 背景色を赤色に設定 */
+    color: white;             /* 文字色を白色に設定 */
+    border: none;             /* ボーダーをなくす */
+    padding: 8px 16px;        /* 内側の余白を設定 */
+    text-align: center;       /* テキストを中央寄せ */
+    text-decoration: none;    /* 下線を除去 */
+    display: inline-block;    /* インラインブロック要素として表示 */
+    font-size: 14px;          /* フォントサイズを設定 */
+    cursor: pointer;          /* カーソルをポインターに変更 */
+    border-radius: 4px;       /* 角を少し丸くする */
+}
+.delete-button:hover {
+    background-color: #d32f2f; /* ホバー時に少し濃い赤色にする */
 }
