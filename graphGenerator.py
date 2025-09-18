@@ -21,6 +21,11 @@ TICKERS = {
 }
 
 def get_graph_image_path():
+    """
+    株価グラフの画像パスを取得する関数。
+    もし最新の画像情報が見つからない、またはファイルが存在しない場合、
+    generate_stock_graph関数を呼び出して新しいグラフを生成する。
+    """
     # 現在の年月日を取得。終了日としても利用する
     today_str = date.today().strftime('%Y-%m-%d')
 
