@@ -1,11 +1,13 @@
 from flask import Flask, request, render_template, session, redirect, url_for, jsonify
-import secrets
+import secrets 
+import os
 from accountAuth import get_user, check_password, hash_password, get_users, user_delete
 from graphGenerator import get_graph_image_path
 
 app = Flask(__name__)
 # セッションを使うための秘密鍵を設定
-app.secret_key = secrets.token_hex(32)
+# 固定のキーを環境変数 'SECRET_KEY' から読み込む。
+app.secret_key = os.environ.get('SECRET_KEY')
 
 @app.route('/')
 def index():

@@ -8,7 +8,7 @@ from boto3.dynamodb.conditions import Key, Attr
 from datetime import date, timedelta
 
 # DynamoDBに接続するための設定
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-1')
 # DynamoDBのグラフ画像情報のテーブル名
 graph_img_table = dynamodb.Table('KABU_graphImgInfoTable')
 

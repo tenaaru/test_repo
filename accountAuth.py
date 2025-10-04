@@ -3,7 +3,7 @@ import bcrypt
 from botocore.exceptions import ClientError
 
 # DynamoDBに接続するための設定
-dynamodb = boto3.resource('dynamodb')
+dynamodb = boto3.resource('dynamodb', region_name='ap-northeast-1')
 # DynamoDBのアカウント情報のテーブル名
 users_table = dynamodb.Table('KABU_AccountTable')
 
